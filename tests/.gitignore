@@ -1,0 +1,17 @@
+# Virtual Environment (Heavy dependencies ko ignore karne ke liye)
+venv/
+env/
+ENV/
+
+# Python Cache (Temporary compiled files)
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment Variables & Secrets
+.env
+
+# System & Editor temporary files
+.DS_Store
+.vscode/
+.idea/
