@@ -9,6 +9,7 @@ from app.models.schemas import TriageRequest, TriageResultResponse
 from app.services.triage import evaluate_triage_and_domain, analyze_severity_and_impact
 from app.services.deduplication import detect_relationships
 from app.services.ranking import rank_top_institutions
+from app.data.knowledge_base import JHARKHAND_INSTITUTIONS
 
 app = FastAPI(
     title="JanSetu AI Engine v2",
@@ -25,7 +26,7 @@ app.add_middleware(
 
 NODE_BACKEND_CALLBACK = os.getenv("NODE_BACKEND_CALLBACK", "http://localhost:5000/api/v1/ai/triage-callback")
 
-# State registry for live frontend polling
+# In-memory registry for live frontend polling
 AI_JOB_REGISTRY = {}
 
 def process_ai_pipeline(req: TriageRequest):
@@ -33,7 +34,7 @@ def process_ai_pipeline(req: TriageRequest):
     try:
         # State 1: ANALYSING
         AI_JOB_REGISTRY[pid]["status"] = "ANALYSING"
-        time.sleep(0.3) # Natural processing cadence for UI animation
+        time.sleep(0.3)
 
         is_routine, category, confidence = evaluate_triage_and_domain(req.text)
         
@@ -62,7 +63,7 @@ def process_ai_pipeline(req: TriageRequest):
         similar_probs, relation_action = detect_relationships(req.text, req.latitude, req.longitude)
         ranked_institutions = rank_top_institutions(category, req.district, req.latitude, req.longitude, top_k=4)
 
-        # Final Action Consolidation
+        # Determine Final Action
         if relation_action == "REUSE_EXISTING_SOLUTION":
             final_action = "REUSE_EXISTING_SOLUTION"
         elif relation_action == "ADAPT_SIMILAR_BLUEPRINT":
@@ -86,9 +87,9 @@ def process_ai_pipeline(req: TriageRequest):
 
         AI_JOB_REGISTRY[pid] = result_payload
 
-        # Webhook trigger to Member 1's Node backend
+        # Optional Webhook callback to Node.js backend
         try:
-            requests.post(NODE_BACKEND_CALLBACK, json=result_payload, timeout=3)
+            requests.post(NODE_BACKEND_CALLBACK, json=result_payload, timeout=2)
         except Exception:
             pass
 
